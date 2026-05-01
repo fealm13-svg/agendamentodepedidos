@@ -625,9 +625,11 @@ function gerarLink(){
     +'&tel='+encodeURIComponent(tel)
     +'&prazo='+encodeURIComponent(prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo');
 
+  console.log('[CRIAR] URL chamada:', url);
   // no-cors: não lemos a resposta, apenas disparamos o salvamento
   fetch(url, {mode:'no-cors'})
-  .then(function(){
+  .then(function(r){
+    console.log('[CRIAR] fetch ok, status:', r.status, 'type:', r.type);
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
     var base=window.location.href.split('?')[0];
@@ -636,9 +638,9 @@ function gerarLink(){
     show('link-box');
   })
   .catch(function(e){
+    console.error('[CRIAR] fetch erro:', e.name, e.message);
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
-    // Mesmo com erro de rede, gera o link (o pedido foi salvo)
     var base=window.location.href.split('?')[0];
     var link=base+'?pedido='+num;
     document.getElementById('link-val').textContent=link;
@@ -684,7 +686,10 @@ function carregarBV(){
 function jsonpRequest(url, onSuccess, onError){
   var cbName = '__jsonpcb_'+Date.now();
   var script = document.createElement('script');
+  console.log('[JSONP] iniciando, callback:', cbName);
+  console.log('[JSONP] URL:', url+'&callback='+cbName);
   var timer = setTimeout(function(){
+    console.error('[JSONP] TIMEOUT após 8s');
     cleanup();
     if(onError) onError();
   }, 8000);
@@ -694,18 +699,26 @@ function jsonpRequest(url, onSuccess, onError){
     if(script.parentNode) script.parentNode.removeChild(script);
   }
   window[cbName] = function(data){
+    console.log('[JSONP] resposta recebida:', data);
     cleanup();
     onSuccess(data);
   };
   script.src = url + '&callback=' + cbName;
-  script.onerror = function(){ cleanup(); if(onError) onError(); };
+  script.onerror = function(e){
+    console.error('[JSONP] script.onerror:', e);
+    cleanup();
+    if(onError) onError();
+  };
   document.head.appendChild(script);
+  console.log('[JSONP] script tag adicionado ao head');
 }
 
 function lerParams(){
   var params=new URLSearchParams(window.location.search);
   var numPedido=params.get('pedido');
   var admin=params.get('admin');
+  console.log('[PARAMS] URL:', window.location.href);
+  console.log('[PARAMS] pedido=', numPedido, '| admin=', admin);
 
   // Modo admin — impressão interna
   if(admin){
@@ -715,18 +728,25 @@ function lerParams(){
 
   // Modo cliente — usa JSONP para contornar CORS ao ler dados
   if(numPedido){
+    console.log('[PARAMS] pedido encontrado na URL:', numPedido);
+    console.log('[PARAMS] APPS_SCRIPT_URL:', APPS_SCRIPT_URL);
     jsonpRequest(
       APPS_SCRIPT_URL+'?action=buscar&pedido='+encodeURIComponent(numPedido),
       function(data){
+        console.log('[PARAMS] dados recebidos:', data);
         if(data.ok){
           pedidoData={num:data.num,produto:data.produto,nome:data.nome,
             tel:data.tel,pago:data.pago,prazo:data.prazo};
           carregarBV();
         } else {
+          console.error('[PARAMS] pedido não encontrado, erro:', data.erro);
           ir('sc-erro');
         }
       },
-      function(){ ir('sc-erro'); }
+      function(){
+        console.error('[PARAMS] jsonpRequest falhou — indo para sc-erro');
+        ir('sc-erro');
+      }
     );
     return;
   }
