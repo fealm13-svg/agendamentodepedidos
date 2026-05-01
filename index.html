@@ -686,7 +686,7 @@ function setPrazo(v){
     :'Cliente pode agendar a partir de amanhã (1 dia de prazo para preparo).';
 }
 
-async function gerarLink(){
+function gerarLink(){
   var num=document.getElementById('f-num').value.trim();
   var prod=document.getElementById('f-prod').value.trim();
   var nome=document.getElementById('f-nome').value.trim();
@@ -698,46 +698,37 @@ async function gerarLink(){
   btnGerar.disabled=true;
   btnGerar.textContent='Salvando...';
 
-  try{
-    var url=APPS_SCRIPT_URL
-      +'?action=criar'
-      +'&num='+encodeURIComponent(num)
-      +'&produto='+encodeURIComponent(prod)
-      +'&pago='+encodeURIComponent(pagoStatus?'Pago':'Aguardando pagamento')
-      +'&nome='+encodeURIComponent(nome)
-      +'&tel='+encodeURIComponent(tel)
-      +'&prazo='+encodeURIComponent(prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo');
+  // Usa GET para contornar CORS do Apps Script
+  var url=APPS_SCRIPT_URL
+    +'?action=criar'
+    +'&num='+encodeURIComponent(num)
+    +'&produto='+encodeURIComponent(prod)
+    +'&pago='+encodeURIComponent(pagoStatus?'Pago':'Aguardando pagamento')
+    +'&nome='+encodeURIComponent(nome)
+    +'&tel='+encodeURIComponent(tel)
+    +'&prazo='+encodeURIComponent(prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo');
 
-    var resp=await fetch(url,{method:'GET',redirect:'follow'});
-    var txt=await resp.text();
-    var data;
-    try{
-      data=JSON.parse(txt);
-    }catch(e){
-      var m=txt.trim().match(/^[^(]+\((.+)\)\s*;?\s*$/s);
-      if(m) data=JSON.parse(m[1]);
-      else throw new Error('Resposta inválida do servidor.');
-    }
-
-    if(!data || !data.ok){
-      throw new Error((data && data.erro) ? data.erro : 'Não foi possível criar o pedido.');
-    }
-
-    var pedidoFinal=String(data.pedido || data.num || num).replace(/\D/g,'').padStart(6,'0');
-    document.getElementById('f-num').value=pedidoFinal;
-    document.getElementById('f-num-display').textContent='#'+pedidoFinal;
-
-    var base=window.location.href.split('?')[0];
-    var link=base+'?pedido='+pedidoFinal;
-    document.getElementById('link-val').textContent=link;
-    show('link-box');
-  }catch(e){
-    alert('Não foi possível salvar o pedido. Verifique a URL do Apps Script e tente novamente.');
-    console.error('[CRIAR] erro:', e);
-  }finally{
+  console.log('[CRIAR] URL chamada:', url);
+  // no-cors: não lemos a resposta, apenas disparamos o salvamento
+  fetch(url, {mode:'no-cors'})
+  .then(function(r){
+    console.log('[CRIAR] fetch ok, status:', r.status, 'type:', r.type);
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
-  }
+    var base=window.location.href.split('?')[0];
+    var link=base+'?pedido='+num;
+    document.getElementById('link-val').textContent=link;
+    show('link-box');
+  })
+  .catch(function(e){
+    console.error('[CRIAR] fetch erro:', e.name, e.message);
+    btnGerar.disabled=false;
+    btnGerar.textContent='Gerar link do pedido';
+    var base=window.location.href.split('?')[0];
+    var link=base+'?pedido='+num;
+    document.getElementById('link-val').textContent=link;
+    show('link-box');
+  });
 }
 
 function copiarLink(){
@@ -765,12 +756,13 @@ function simularCliente(){
 // CARREGAR PEDIDO (cliente abre o link)
 // ══════════════════════════════════════════════════
 function carregarBV(){
+  var nomeBase = String(pedidoData.nome || 'cliente').trim().split(' ')[0];
   set('bv-num','Pedido #'+pedidoData.num);
-  set('bv-ttl','Olá, '+pedidoData.nome.split(' ')[0]+'! Seu pedido foi confirmado.');
-  set('bv-prod',pedidoData.produto);
+  set('bv-ttl','Olá, '+nomeBase+'! Seu pedido foi confirmado.');
+  set('bv-prod',pedidoData.produto || '');
   set('hdr-num','Pedido #'+pedidoData.num);
-  document.getElementById('c-nome').value=pedidoData.nome; markFilled(document.getElementById('c-nome'));
-  document.getElementById('c-tel').value=pedidoData.tel; markFilled(document.getElementById('c-tel'));
+  document.getElementById('c-nome').value=pedidoData.nome || ''; markFilled(document.getElementById('c-nome'));
+  document.getElementById('c-tel').value=pedidoData.tel || ''; markFilled(document.getElementById('c-tel'));
   ir('sc-bv');
 }
 
@@ -823,8 +815,9 @@ function lerParams(){
       function(data){
         console.log('[PARAMS] dados recebidos:', data);
         if(data.ok){
-          pedidoData={num:data.num,produto:data.produto,nome:data.nome,
-            tel:data.tel,pago:data.pago,prazo:data.prazo};
+          var src = data.dados || data;
+          pedidoData={num:data.num || src.pedido || numPedido,produto:src.produto || '',nome:src.nome || '',
+            tel:src.tel || '',pago:src.pago || '',prazo:src.prazo || ''};
           carregarBV();
         } else {
           console.error('[PARAMS] pedido não encontrado, erro:', data.erro);
@@ -851,12 +844,13 @@ function buscarEImprimir(num){
   .then(function(data){
     if(data.ok){
       // Montar impressão com os dados disponíveis
-      set('pr-num','#'+data.num);
-      set('pr-prod',data.produto);
+      var src = data.dados || data;
+      set('pr-num','#'+(data.num || src.pedido || num));
+      set('pr-prod',src.produto || '');
       var pagoEl=document.getElementById('pr-pago');
-      pagoEl.textContent=data.pago;
-      pagoEl.className='pr-status '+(data.pago==='Pago'?'pr-pago':'pr-npago');
-      set('pr-nome',data.nome);set('pr-tel',data.tel);
+      pagoEl.textContent=src.pago || '';
+      pagoEl.className='pr-status '+((src.pago || '')==='Pago'?'pr-pago':'pr-npago');
+      set('pr-nome',src.nome || '');set('pr-tel',src.tel || '');
       var agora=new Date();
       set('pr-gerado',agora.toLocaleDateString('pt-BR')+' às '+agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
       var style=document.createElement('style');
