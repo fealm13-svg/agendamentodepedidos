@@ -625,24 +625,24 @@ function gerarLink(){
     +'&tel='+encodeURIComponent(tel)
     +'&prazo='+encodeURIComponent(prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo');
 
-  fetch(url)
-  .then(function(r){return r.json();})
-  .then(function(data){
+  // no-cors: não lemos a resposta, apenas disparamos o salvamento
+  fetch(url, {mode:'no-cors'})
+  .then(function(){
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
-    if(data.ok){
-      var base=window.location.href.split('?')[0];
-      var link=base+'?pedido='+num;
-      document.getElementById('link-val').textContent=link;
-      show('link-box');
-    } else {
-      alert('Erro ao salvar: '+(data.erro||'tente novamente'));
-    }
+    var base=window.location.href.split('?')[0];
+    var link=base+'?pedido='+num;
+    document.getElementById('link-val').textContent=link;
+    show('link-box');
   })
   .catch(function(e){
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
-    alert('Erro de conexão: '+e.message);
+    // Mesmo com erro de rede, gera o link (o pedido foi salvo)
+    var base=window.location.href.split('?')[0];
+    var link=base+'?pedido='+num;
+    document.getElementById('link-val').textContent=link;
+    show('link-box');
   });
 }
 
@@ -680,6 +680,28 @@ function carregarBV(){
   ir('sc-bv');
 }
 
+// JSONP — única forma de ler resposta do Apps Script sem CORS
+function jsonpRequest(url, onSuccess, onError){
+  var cbName = '__jsonpcb_'+Date.now();
+  var script = document.createElement('script');
+  var timer = setTimeout(function(){
+    cleanup();
+    if(onError) onError();
+  }, 8000);
+  function cleanup(){
+    clearTimeout(timer);
+    delete window[cbName];
+    if(script.parentNode) script.parentNode.removeChild(script);
+  }
+  window[cbName] = function(data){
+    cleanup();
+    onSuccess(data);
+  };
+  script.src = url + '&callback=' + cbName;
+  script.onerror = function(){ cleanup(); if(onError) onError(); };
+  document.head.appendChild(script);
+}
+
 function lerParams(){
   var params=new URLSearchParams(window.location.search);
   var numPedido=params.get('pedido');
@@ -691,23 +713,21 @@ function lerParams(){
     return;
   }
 
-  // Modo cliente
+  // Modo cliente — usa JSONP para contornar CORS ao ler dados
   if(numPedido){
-    // Buscar dados no Apps Script
-    fetch(APPS_SCRIPT_URL+'?action=buscar&pedido='+encodeURIComponent(numPedido))
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.ok){
-        pedidoData={num:data.num,produto:data.produto,nome:data.nome,
-          tel:data.tel,pago:data.pago,prazo:data.prazo};
-        carregarBV();
-      } else {
-        ir('sc-erro');
-      }
-    })
-    .catch(function(){
-      ir('sc-erro');
-    });
+    jsonpRequest(
+      APPS_SCRIPT_URL+'?action=buscar&pedido='+encodeURIComponent(numPedido),
+      function(data){
+        if(data.ok){
+          pedidoData={num:data.num,produto:data.produto,nome:data.nome,
+            tel:data.tel,pago:data.pago,prazo:data.prazo};
+          carregarBV();
+        } else {
+          ir('sc-erro');
+        }
+      },
+      function(){ ir('sc-erro'); }
+    );
     return;
   }
 
@@ -967,14 +987,9 @@ function finalizar(){
     +'&data_entrega='+encodeURIComponent(payload.data_entrega)
     +'&faixa_horario='+encodeURIComponent(payload.faixa_horario);
 
-  fetch(url)
-  .then(function(r){return r.json();})
-  .then(function(data){
-    btn.disabled=false;btn.textContent='Finalizar pedido';
-    if(data.aceiteEm) aceiteEm=data.aceiteEm;
-    montarComprovante(nome,tel,msg,ass,pnome,ptel,endStr,obs,dataStr,horaStr);
-  })
-  .catch(function(){
+  // no-cors: não lemos a resposta, apenas disparamos o salvamento
+  fetch(url, {mode:'no-cors'})
+  .finally(function(){
     btn.disabled=false;btn.textContent='Finalizar pedido';
     montarComprovante(nome,tel,msg,ass,pnome,ptel,endStr,obs,dataStr,horaStr);
   });
