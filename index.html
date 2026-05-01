@@ -573,6 +573,38 @@ function finalizar(){
 
   dadosFinais={nome,tel,msg,ass,pnome,ptel,data,hora,obs,endStr,tipo:tipoEnd};
 
+  /* ─── ENVIAR PARA FORMSPREE ─────────────────────────────── */
+  var payload={
+    '_subject': '🌸 Novo agendamento — Pedido #'+pedidoData.num,
+    'Pedido_Numero': '#'+pedidoData.num,
+    'Pedido_Produto': pedidoData.prod,
+    'Comprador_Nome': nome,
+    'Comprador_WhatsApp': tel,
+    'Cartao_Mensagem': msg||'(sem cartão)',
+    'Cartao_Assinatura': ass||'—',
+    'Entrega_Tipo': tipoEnd==='res'?'Residencial':'Comercial',
+    'Presenteado_Nome': pnome||'—',
+    'Presenteado_Tel': ptel||'—',
+    'Entrega_Endereco': endStr||'—',
+    'Entrega_Observacoes': obs||'—',
+    'Entrega_Data': fmtData(data)||'—',
+    'Entrega_Horario': hora||'—',
+    'Gerado_Em': new Date().toLocaleString('pt-BR')
+  };
+
+  fetch('https://formspree.io/f/xeenqypy',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify(payload)
+  })
+  .then(function(r){
+    if(!r.ok) console.warn('Formspree: erro ao enviar',r.status);
+  })
+  .catch(function(e){
+    console.warn('Formspree: falha na conexão',e);
+  });
+  /* ─────────────────────────────────────────────────────────── */
+
   /* Comprovante do cliente */
   set('comp-sub','Pedido #'+pedidoData.num+' — Agendamento registrado.');
   set('cp-num','#'+pedidoData.num);
