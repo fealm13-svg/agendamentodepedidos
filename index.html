@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Floricultura Dias — Pedido</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:#f5f0eb;color:#1a1a1a}
+
+/* ─── SHELL ─────────────────────────────── */
+.shell{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:20px 16px 40px}
+.card{background:#fff;border-radius:16px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+
+/* ─── HEADER ─────────────────────────────── */
+.hdr{background:#a91537;padding:20px 20px 14px;text-align:center}
+.hdr-nome{font-size:15px;font-weight:600;color:#fff;letter-spacing:.05em;margin-bottom:2px}
+.hdr-sub{font-size:12px;color:rgba(255,255,255,.75)}
+.hdr-prog{background:rgba(255,255,255,.2);height:3px;margin-top:14px;border-radius:2px}
+.hdr-bar{background:#fff;height:3px;border-radius:2px;transition:width .4s ease}
+.hdr-dots{display:flex;justify-content:center;gap:8px;margin-top:9px}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3);transition:background .3s}
+.dot.on{background:#fff}
+
+/* ─── TELAS ─────────────────────────────── */
+.scr{display:none}.scr.on{display:block}
+.bod{padding:20px}
+.stp{display:none}.stp.on{display:block}
+
+/* ─── COMPONENTES ─────────────────────────────── */
+.tag{display:inline-block;font-size:10px;padding:3px 10px;border-radius:12px;background:#fde0e6;color:#a91537;font-weight:600;margin-bottom:10px;letter-spacing:.04em}
+.ttl{font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+.dsc{font-size:13px;color:#777;margin-bottom:16px;line-height:1.5}
+
+.fld{margin-bottom:14px}
+.fld label{font-size:11px;font-weight:600;color:#666;letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:5px}
+.fld input,.fld select,.fld textarea{
+  width:100%;font-size:14px;padding:10px 12px;
+  border:1px solid #e5e0db;border-radius:10px;
+  background:#fdfcfa;color:#1a1a1a;
+  font-family:'Inter',sans-serif;outline:none;
+  transition:border-color .2s,background .2s,box-shadow .2s;
+}
+.fld textarea{min-height:90px;resize:none;line-height:1.6}
+.fld input:focus,.fld select:focus,.fld textarea:focus{
+  border-color:#a91537;background:#fff;
+  box-shadow:0 0 0 3px rgba(169,21,55,.08);
+}
+.fld input.filled,.fld select.filled,.fld textarea.filled{
+  border-color:#a91537;background:#fff8f9;
+}
+.fld .hint{font-size:11px;color:#999;margin-top:5px;line-height:1.5;font-style:italic}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.seg{display:flex;border:1px solid #e5e0db;border-radius:10px;overflow:hidden;margin-bottom:14px}
+.seg-btn{flex:1;padding:10px 6px;font-size:13px;font-weight:500;text-align:center;cursor:pointer;background:#fff;color:#888;border:none;font-family:'Inter',sans-serif;transition:all .2s;line-height:1.2}
+.seg-btn:not(:last-child){border-right:1px solid #e5e0db}
+.seg-btn.on{background:#a91537;color:#fff}
+
+.info-box{background:#f9f5f2;border-radius:10px;padding:10px 12px;font-size:12px;color:#888;line-height:1.5;margin-bottom:12px;border-left:3px solid #a91537}
+
+.btn-p{width:100%;padding:13px;background:#a91537;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:8px;transition:background .15s;letter-spacing:.02em}
+.btn-p:hover{background:#7d1028}
+.btn-b{width:100%;padding:11px;background:transparent;color:#888;border:1px solid #e5e0db;border-radius:10px;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;margin-top:8px;transition:all .15s}
+.btn-b:hover{border-color:#ccc;color:#555}
+
+.termos{border:1px solid #e5e0db;border-radius:10px;padding:14px;font-size:12px;color:#777;max-height:160px;overflow-y:auto;margin-bottom:14px;line-height:1.7}
+.termos strong{color:#1a1a1a;display:block;margin-bottom:6px;font-size:12px}
+.termos p{margin-bottom:7px}
+.termos p:last-child{margin-bottom:0}
+
+.chk-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#1a1a1a;margin-bottom:10px;cursor:pointer;line-height:1.5;padding:10px;border-radius:10px;border:1px solid #e5e0db;transition:all .2s}
+.chk-row.checked{background:#fff8f9;border-color:#a91537}
+.chk-row input[type=checkbox]{width:16px;height:16px;accent-color:#a91537;flex-shrink:0;margin-top:2px;cursor:pointer}
+
+.err{font-size:12px;color:#a91537;margin-top:6px;font-style:italic;display:none}
+.err.show{display:block}
+.dvd{height:1px;background:#f0ebe4;margin:14px 0}
+
+/* ─── TELA FELIPE ─────────────────────────────── */
+.f-hdr{background:linear-gradient(135deg,#a91537,#7d1028);padding:28px 24px 24px;text-align:center}
+.f-hdr h1{color:#fff;font-size:20px;font-weight:600;margin-bottom:4px}
+.f-hdr p{color:rgba(255,255,255,.75);font-size:13px}
+.f-hdr .badge{display:inline-block;background:rgba(255,255,255,.2);color:#fff;font-size:11px;padding:3px 10px;border-radius:12px;margin-top:8px;letter-spacing:.04em}
+.f-bod{padding:24px}
+.f-section{font-size:10px;font-weight:700;color:#a91537;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;margin-top:18px;padding-bottom:6px;border-bottom:1px solid #f0ebe4}
+.f-section:first-of-type{margin-top:0}
+
+.link-box{background:#f9f5f2;border:1px solid #e5e0db;border-radius:10px;padding:14px;margin-top:12px;display:none}
+.link-label{font-size:11px;color:#999;margin-bottom:6px;font-weight:500}
+.link-val{font-size:12px;color:#a91537;word-break:break-all;font-weight:500;line-height:1.5;margin-bottom:10px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e5e0db}
+.btn-copy{width:100%;padding:10px;background:#a91537;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-copy:hover{background:#7d1028}
+.sim-link{margin-top:14px;text-align:center;font-size:12px;color:#aaa;cursor:pointer;text-decoration:underline}
+.sim-link:hover{color:#a91537}
+
+/* ─── BOAS VINDAS ─────────────────────────────── */
+.bv-bod{padding:24px}
+.bv-num{font-size:11px;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.bv-ttl{font-size:19px;font-weight:600;color:#1a1a1a;margin-bottom:16px;line-height:1.3}
+.bv-card{border:1px solid #e5e0db;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.bv-row{display:flex;justify-content:space-between;align-items:flex-start;padding:11px 14px;border-bottom:1px solid #f0ebe4;gap:10px}
+.bv-row:last-child{border-bottom:none}
+.bv-lbl{color:#aaa;font-size:12px;flex-shrink:0}
+.bv-val{font-weight:500;color:#1a1a1a;font-size:13px;text-align:right}
+.bv-dsc{font-size:13px;color:#777;line-height:1.6;margin-bottom:18px}
+
+/* ─── COMPROVANTE ─────────────────────────────── */
+.comp-bod{padding:20px}
+.comp-hdr{text-align:center;margin-bottom:18px;padding:16px;background:#f9f5f2;border-radius:12px}
+.comp-ic{font-size:32px;margin-bottom:8px}
+.comp-ttl{font-size:17px;font-weight:600;color:#1a1a1a;margin-bottom:3px}
+.comp-sub{font-size:12px;color:#aaa}
+.comp-card{border:1px solid #e5e0db;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.comp-sec{padding:9px 14px;background:#f9f5f2;border-bottom:1px solid #e5e0db;font-size:10px;font-weight:700;color:#a91537;letter-spacing:.09em;text-transform:uppercase}
+.comp-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 14px;border-bottom:1px solid #f5f0eb;gap:10px}
+.comp-row:last-child{border-bottom:none}
+.comp-lbl{color:#aaa;font-size:12px;flex-shrink:0;min-width:80px}
+.comp-val{font-size:12px;font-weight:500;color:#1a1a1a;text-align:right;flex:1}
+.comp-footer{background:#f9f5f2;border-radius:12px;padding:12px 14px;text-align:center;font-size:12px;color:#aaa;line-height:1.6;margin-bottom:14px}
+.comp-footer strong{color:#1a1a1a}
+.btn-pdf{width:100%;padding:13px;background:#a91537;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:0}
+.btn-pdf:hover{background:#7d1028}
+
+/* ─── IMPRESSÃO ─────────────────────────────── */
+@media print{
+  @page{size:A4;margin:15mm}
+  html,body{background:#fff!important;font-family:'Inter',sans-serif}
+  body>*{display:none!important}
+  #print-area{display:block!important}
+  .shell,.card{box-shadow:none!important}
+}
+#print-area{display:none}
+.print-doc{font-family:'Inter',sans-serif;font-size:10pt;color:#000;max-width:180mm}
+.print-hdr{text-align:center;border-bottom:2px solid #a91537;padding-bottom:10px;margin-bottom:14px}
+.print-hdr h1{font-size:16pt;color:#a91537;margin-bottom:2px}
+.print-hdr p{font-size:9pt;color:#555}
+.print-sec{font-size:8pt;font-weight:700;color:#a91537;letter-spacing:.08em;text-transform:uppercase;margin:12px 0 6px;padding-bottom:4px;border-bottom:1px solid #e5e0db}
+.print-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f5f0eb;font-size:9.5pt}
+.print-row:last-child{border-bottom:none}
+.print-lbl{color:#666;min-width:120px}
+.print-val{font-weight:500;text-align:right;flex:1}
+.print-status{display:inline-block;padding:3px 10px;border-radius:4px;font-weight:700;font-size:9pt}
+.print-status.pago{background:#e8f5e9;color:#2e7d32}
+.print-status.npago{background:#fde0e6;color:#a91537}
+.print-footer{margin-top:20px;padding-top:10px;border-top:1px solid #e5e0db;font-size:8pt;color:#999;text-align:center}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="card">
+
+<!-- ══════ TELA FELIPE ══════ -->
+<div class="scr on" id="sc-felipe">
+  <div class="f-hdr">
+    <h1>Floricultura Dias</h1>
+    <p>Gerador de link de pedido</p>
+    <span class="badge">Uso interno</span>
+  </div>
+  <div class="f-bod">
+
+    <div class="f-section">Dados do pedido</div>
+    <div class="fld"><label>Número do pedido</label><input type="text" id="f-num" placeholder="Ex: 2566" oninput="markFilled(this)"></div>
+    <div class="fld"><label>Produto</label><input type="text" id="f-prod" placeholder="Ex: Buquê de Rosas Vermelhas" oninput="markFilled(this)"></div>
+
+    <div class="f-section">Dados do cliente</div>
+    <div class="fld"><label>Nome do cliente</label><input type="text" id="f-nome" placeholder="Ex: Maria Silva" oninput="markFilled(this)"></div>
+    <div class="fld"><label>WhatsApp do cliente</label><input type="tel" id="f-tel" placeholder="(11) 99999-9999" oninput="markFilled(this)"></div>
+
+    <div class="f-section">Status do pagamento</div>
+    <div class="seg">
+      <button class="seg-btn" id="btn-pago" onclick="setPago(true)">✓ Pago</button>
+      <button class="seg-btn" id="btn-npago" onclick="setPago(false)">Aguardando pagamento</button>
+    </div>
+
+    <button class="btn-p" onclick="gerarLink()">Gerar link do pedido</button>
+
+    <div class="link-box" id="link-box">
+      <div class="link-label">Copie e envie pelo WhatsApp:</div>
+      <div class="link-val" id="link-val"></div>
+      <button class="btn-copy" onclick="copiarLink()">📋 Copiar link</button>
+    </div>
+
+    <div class="sim-link" onclick="simular()">▶ Simular tela do cliente</div>
+  </div>
+</div>
+
+<!-- ══════ BOAS VINDAS ══════ -->
+<div class="scr" id="sc-bv">
+  <div class="hdr">
+    <div class="hdr-nome">Floricultura Dias</div>
+    <div class="hdr-sub">Flores & Cestas — Desde 1971</div>
+  </div>
+  <div class="bv-bod">
+    <div class="bv-num" id="bv-num">Pedido #</div>
+    <div class="bv-ttl" id="bv-ttl">Olá! Seu pedido foi confirmado.</div>
+    <div class="bv-card">
+      <div class="bv-row"><span class="bv-lbl">Produto</span><span class="bv-val" id="bv-prod">—</span></div>
+    </div>
+    <div class="bv-dsc">Para finalizar, precisamos de alguns dados para organizar sua entrega. O processo é rápido, leva menos de 2 minutos!</div>
+    <button class="btn-p" onclick="irForm(0)">Preencher dados de entrega →</button>
+  </div>
+</div>
+
+<!-- ══════ FORMULÁRIO ══════ -->
+<div class="scr" id="sc-form">
+  <div class="hdr">
+    <div class="hdr-nome">Floricultura Dias</div>
+    <div class="hdr-sub" id="hdr-num">Pedido #</div>
+    <div class="hdr-prog"><div class="hdr-bar" id="bar" style="width:25%"></div></div>
+    <div class="hdr-dots">
+      <div class="dot on" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+    </div>
+  </div>
+  <div class="bod">
+
+    <!-- PASSO 1 -->
+    <div class="stp on" id="s0">
+      <div class="tag">PASSO 1 DE 4</div>
+      <div class="ttl">Confirme seus dados</div>
+      <div class="dsc">Verifique as informações abaixo. Corrija se necessário e continue.</div>
+      <div class="fld"><label>Nome completo</label><input type="text" id="c-nome" oninput="markFilled(this)" placeholder="Seu nome completo"></div>
+      <div class="fld"><label>WhatsApp</label><input type="tel" id="c-tel" oninput="markFilled(this)" placeholder="(11) 99999-9999"></div>
+      <button class="btn-p" onclick="irForm(1)">Confirmar e continuar</button>
+    </div>
+
+    <!-- PASSO 2 -->
+    <div class="stp" id="s1">
+      <div class="tag">PASSO 2 DE 4</div>
+      <div class="ttl">Mensagem do cartão</div>
+      <div class="dsc">Escreva a mensagem que irá no cartãozinho junto ao presente. Deixe em branco se não quiser cartão.</div>
+      <div class="fld"><label>Mensagem</label><textarea id="c-msg" placeholder="Ex: Parabéns pelo seu aniversário, que você seja muito feliz nesse novo ciclo que se inicia." oninput="markFilled(this)"></textarea></div>
+      <div class="fld"><label>Assinatura</label><input type="text" id="c-ass" placeholder="Ex: Com carinho, Maria" oninput="markFilled(this)"></div>
+      <button class="btn-p" onclick="irForm(2)">Continuar</button>
+      <button class="btn-b" onclick="irForm(0)">Voltar</button>
+    </div>
+
+    <!-- PASSO 3 -->
+    <div class="stp" id="s2">
+      <div class="tag">PASSO 3 DE 4</div>
+      <div class="ttl">Dados da entrega</div>
+      <div class="dsc">Selecione o tipo de endereço para continuar.</div>
+
+      <div class="seg">
+        <button class="seg-btn" id="tp-res" onclick="setTipo('res')">🏠 Residencial</button>
+        <button class="seg-btn" id="tp-com" onclick="setTipo('com')">🏢 Comercial</button>
+      </div>
+
+      <div id="campos-entrega" style="display:none">
+        <div class="fld">
+          <label>Nome da pessoa presenteada</label>
+          <div class="r2">
+            <input type="text" id="e-pnome" placeholder="Nome" oninput="markFilled(this)">
+            <input type="text" id="e-psobrenome" placeholder="Sobrenome" oninput="markFilled(this)">
+          </div>
+        </div>
+        <div class="fld">
+          <label>Telefone da pessoa presenteada</label>
+          <input type="tel" id="e-ptel" placeholder="(11) 99999-9999" oninput="markFilled(this)">
+          <div class="hint">Não obrigatório, mas recomendamos informar para ajudar na entrega. Só entraremos em contato com o presenteado(a) caso não consigamos falar primeiro com você.</div>
+        </div>
+
+        <div id="campos-res" style="display:none">
+          <div class="r2">
+            <div class="fld"><label>Rua / Avenida</label><input type="text" id="e-rua" placeholder="Nome da rua" oninput="markFilled(this)"></div>
+            <div class="fld"><label>Número</label><input type="text" id="e-num" placeholder="Nº" oninput="markFilled(this)"></div>
+          </div>
+          <div class="r2">
+            <div class="fld"><label>Apto (se tiver)</label><input type="text" id="e-apto" placeholder="Apto" oninput="markFilled(this)"></div>
+            <div class="fld"><label>Bloco/Torre (se tiver)</label><input type="text" id="e-bloco" placeholder="Bloco" oninput="markFilled(this)"></div>
+          </div>
+          <div class="fld"><label>Bairro</label><input type="text" id="e-bairro" placeholder="Bairro" oninput="markFilled(this)"></div>
+        </div>
+
+        <div id="campos-com" style="display:none">
+          <div class="fld"><label>Endereço completo</label><input type="text" id="e-end" placeholder="Rua, número" oninput="markFilled(this)"></div>
+          <div class="r2">
+            <div class="fld"><label>Bairro</label><input type="text" id="e-bairro2" placeholder="Bairro" oninput="markFilled(this)"></div>
+            <div class="fld"><label>Departamento</label><input type="text" id="e-depto" placeholder="Ex: RH" oninput="markFilled(this)"></div>
+          </div>
+          <div class="fld"><label>Ramal (se tiver)</label><input type="text" id="e-ramal" placeholder="Ex: 2045" oninput="markFilled(this)"></div>
+        </div>
+
+        <div class="fld"><label>Observações de entrega</label><textarea id="e-obs" placeholder="Ponto de referência, se tem portaria/recepção, etc." oninput="markFilled(this)"></textarea></div>
+
+        <div class="dvd"></div>
+        <div class="info-box">Trabalhamos com faixas de horário, não horários exatos. Seguimos à risca o período agendado.</div>
+        <div class="r2">
+          <div class="fld"><label>Data</label><input type="date" id="e-data" onchange="gerarHorarios();markFilled(this)"></div>
+          <div class="fld"><label>Faixa de horário</label><select id="e-hora" onchange="markFilled(this)"><option value="">Selecione a data</option></select></div>
+        </div>
+      </div>
+
+      <button class="btn-p" style="margin-top:14px" onclick="irForm(3)">Continuar</button>
+      <button class="btn-b" onclick="irForm(1)">Voltar</button>
+    </div>
+
+    <!-- PASSO 4 -->
+    <div class="stp" id="s3">
+      <div class="tag">PASSO 4 DE 4</div>
+      <div class="ttl">Termos e confirmação</div>
+      <div class="dsc">Leia com atenção antes de finalizar seu pedido.</div>
+      <div class="termos">
+        <strong>Termos de entrega — Floricultura Dias</strong>
+        <p>• É de responsabilidade do cliente o preenchimento correto e completo dos dados de entrega, incluindo endereço, número, complemento e ponto de referência.</p>
+        <p>• Seu pedido será entregue dentro do período selecionado. Caso precise de atualizações, entre em contato pelo nosso WhatsApp.</p>
+        <p>• O motorista permanecerá no local por até 10 (dez) minutos. Caso a entrega não seja concluída nesse período, o pedido retornará à loja.</p>
+        <p>• Para um novo envio, será necessária a cobrança de uma nova taxa de entrega e um novo agendamento sujeito à disponibilidade.</p>
+      </div>
+      <label class="chk-row" id="cr1" onclick="toggleChk('chk1','cr1')">
+        <input type="checkbox" id="chk1" onclick="event.stopPropagation();toggleChk('chk1','cr1')">
+        Li e aceito os termos de entrega acima.
+      </label>
+      <label class="chk-row" id="cr2" onclick="toggleChk('chk2','cr2')">
+        <input type="checkbox" id="chk2" onclick="event.stopPropagation();toggleChk('chk2','cr2')">
+        Confirmo que os dados de entrega informados estão corretos e são de minha responsabilidade.
+      </label>
+      <div class="err" id="err-chk">Por favor, marque as duas opções para finalizar.</div>
+      <button class="btn-p" onclick="finalizar()">Finalizar pedido</button>
+      <button class="btn-b" onclick="irForm(2)">Voltar</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════ COMPROVANTE ══════ -->
+<div class="scr" id="sc-comp">
+  <div class="hdr">
+    <div class="hdr-nome">Floricultura Dias</div>
+    <div class="hdr-sub">Comprovante de agendamento</div>
+  </div>
+  <div class="comp-bod">
+    <div class="comp-hdr">
+      <div class="comp-ic">✅</div>
+      <div class="comp-ttl">Pedido confirmado!</div>
+      <div class="comp-sub" id="comp-sub">Agendamento registrado com sucesso.</div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-sec">Pedido</div>
+      <div class="comp-row"><span class="comp-lbl">Número</span><span class="comp-val" id="cp-num">—</span></div>
+      <div class="comp-row"><span class="comp-lbl">Produto</span><span class="comp-val" id="cp-prod">—</span></div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-sec">Comprador</div>
+      <div class="comp-row"><span class="comp-lbl">Nome</span><span class="comp-val" id="cp-nome">—</span></div>
+      <div class="comp-row"><span class="comp-lbl">WhatsApp</span><span class="comp-val" id="cp-tel">—</span></div>
+    </div>
+    <div class="comp-card" id="cp-cartao-card" style="display:none">
+      <div class="comp-sec">Mensagem do cartão</div>
+      <div class="comp-row"><span class="comp-lbl">Mensagem</span><span class="comp-val" id="cp-msg">—</span></div>
+      <div class="comp-row" id="cp-ass-row"><span class="comp-lbl">Assinatura</span><span class="comp-val" id="cp-ass">—</span></div>
+    </div>
+    <div class="comp-card">
+      <div class="comp-sec">Entrega</div>
+      <div class="comp-row"><span class="comp-lbl">Tipo</span><span class="comp-val" id="cp-tipo">—</span></div>
+      <div class="comp-row"><span class="comp-lbl">Presenteado(a)</span><span class="comp-val" id="cp-pnome">—</span></div>
+      <div class="comp-row" id="cp-ptel-row" style="display:none"><span class="comp-lbl">Tel. presenteado(a)</span><span class="comp-val" id="cp-ptel">—</span></div>
+      <div class="comp-row"><span class="comp-lbl">Endereço</span><span class="comp-val" id="cp-end">—</span></div>
+      <div class="comp-row" id="cp-obs-row" style="display:none"><span class="comp-lbl">Observações</span><span class="comp-val" id="cp-obs">—</span></div>
+      <div class="comp-row"><span class="comp-lbl">Data</span><span class="comp-val" id="cp-data">—</span></div>
+      <div class="comp-row"><span class="comp-lbl">Horário</span><span class="comp-val" id="cp-hora">—</span></div>
+    </div>
+    <div class="comp-footer">
+      Dúvidas? Entre em contato:<br>
+      <strong>(11) 95278-1267</strong><br>
+      <span style="font-size:11px">www.floriculturadias.com</span>
+    </div>
+    <button class="btn-pdf" onclick="salvarPDF()">⬇ Salvar comprovante em PDF</button>
+  </div>
+</div>
+
+</div><!-- /card -->
+</div><!-- /shell -->
+
+<!-- ÁREA DE IMPRESSÃO INTERNA (oculta) -->
+<div id="print-area">
+  <div class="print-doc">
+    <div class="print-hdr">
+      <h1>Floricultura Dias</h1>
+      <p>Comprovante interno de entrega — Uso exclusivo da loja</p>
+    </div>
+    <div class="print-sec">Pedido</div>
+    <div class="print-row"><span class="print-lbl">Número</span><span class="print-val" id="pr-num">—</span></div>
+    <div class="print-row"><span class="print-lbl">Produto</span><span class="print-val" id="pr-prod">—</span></div>
+    <div class="print-row"><span class="print-lbl">Pagamento</span><span class="print-val"><span class="print-status" id="pr-pago">—</span></span></div>
+    <div class="print-sec">Comprador</div>
+    <div class="print-row"><span class="print-lbl">Nome</span><span class="print-val" id="pr-nome">—</span></div>
+    <div class="print-row"><span class="print-lbl">WhatsApp</span><span class="print-val" id="pr-tel">—</span></div>
+    <div class="print-sec" id="pr-cartao-sec">Mensagem do cartão</div>
+    <div id="pr-cartao-rows">
+      <div class="print-row"><span class="print-lbl">Mensagem</span><span class="print-val" id="pr-msg">—</span></div>
+      <div class="print-row" id="pr-ass-row"><span class="print-lbl">Assinatura</span><span class="print-val" id="pr-ass">—</span></div>
+    </div>
+    <div class="print-sec">Entrega</div>
+    <div class="print-row"><span class="print-lbl">Tipo de endereço</span><span class="print-val" id="pr-tipo">—</span></div>
+    <div class="print-row"><span class="print-lbl">Presenteado(a)</span><span class="print-val" id="pr-pnome">—</span></div>
+    <div class="print-row" id="pr-ptel-row"><span class="print-lbl">Tel. presenteado(a)</span><span class="print-val" id="pr-ptel">—</span></div>
+    <div class="print-row"><span class="print-lbl">Endereço</span><span class="print-val" id="pr-end">—</span></div>
+    <div class="print-row" id="pr-obs-row"><span class="print-lbl">Observações</span><span class="print-val" id="pr-obs">—</span></div>
+    <div class="print-row"><span class="print-lbl">Data</span><span class="print-val" id="pr-data">—</span></div>
+    <div class="print-row"><span class="print-lbl">Faixa de horário</span><span class="print-val" id="pr-hora">—</span></div>
+    <div class="print-footer">
+      Floricultura Dias — (11) 95278-1267 — www.floriculturadias.com<br>
+      Comprovante gerado em <span id="pr-gerado">—</span>
+    </div>
+  </div>
+</div>
+
+<script>
+var pagoStatus=null, tipoEnd='', pedidoData={}, dadosFinais={};
+var curStep=-1;
+
+/* ─── UTILIDADES ─────────────────────────────── */
+function markFilled(el){el.classList.toggle('filled',!!(el.value&&el.value.trim()));}
+
+function toggleChk(id,rowId){
+  var chk=document.getElementById(id);
+  chk.checked=!chk.checked;
+  document.getElementById(rowId).classList.toggle('checked',chk.checked);
+  document.getElementById('err-chk').style.display='none';
+  document.getElementById('err-chk').classList.remove('show');
+}
+
+function ir(id){
+  document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
+  document.getElementById(id).classList.add('on');
+  window.scrollTo(0,0);
+}
+
+function setPago(v){
+  pagoStatus=v;
+  document.getElementById('btn-pago').classList.toggle('on',v===true);
+  document.getElementById('btn-npago').classList.toggle('on',v===false);
+}
+
+function set(id,val){var el=document.getElementById(id);if(el)el.textContent=val;}
+function show(id,v){var el=document.getElementById(id);if(el)el.style.display=v||'block';}
+function hide(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+
+function fmtData(d){
+  if(!d)return '';
+  var dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  var p=d.split('-');
+  var dt=new Date(d+'T12:00:00');
+  return dias[dt.getDay()]+', '+p[2]+'/'+p[1]+'/'+p[0];
+}
+
+/* ─── TELA FELIPE ─────────────────────────────── */
+function gerarLink(){
+  var num=document.getElementById('f-num').value.trim();
+  var prod=document.getElementById('f-prod').value.trim();
+  var nome=document.getElementById('f-nome').value.trim();
+  var tel=document.getElementById('f-tel').value.trim();
+  if(!num||!prod||!nome||!tel){alert('Preencha todos os campos do pedido e do cliente.');return;}
+  if(pagoStatus===null){alert('Selecione o status de pagamento.');return;}
+  pedidoData={num,prod,nome,tel,pago:pagoStatus};
+  var base=window.location.href.split('?')[0];
+  var link=base+'?num='+encodeURIComponent(num)+'&prod='+encodeURIComponent(prod)+'&nome='+encodeURIComponent(nome)+'&tel='+encodeURIComponent(tel)+'&pago='+(pagoStatus?'sim':'nao');
+  document.getElementById('link-val').textContent=link;
+  document.getElementById('link-box').style.display='block';
+}
+
+function copiarLink(){
+  var txt=document.getElementById('link-val').textContent;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){
+      var btn=document.querySelector('.btn-copy');
+      btn.textContent='✓ Copiado!';
+      setTimeout(function(){btn.textContent='📋 Copiar link';},2000);
+    });
+  }
+}
+
+function simular(){
+  var num=document.getElementById('f-num').value.trim()||'2566';
+  var prod=document.getElementById('f-prod').value.trim()||'Buquê de Rosas Vermelhas';
+  var nome=document.getElementById('f-nome').value.trim()||'Maria Silva';
+  var tel=document.getElementById('f-tel').value.trim()||'(11) 99999-9999';
+  pedidoData={num,prod,nome,tel,pago:pagoStatus!==null?pagoStatus:true};
+  carregarCliente(pedidoData);
+}
+
+function carregarCliente(d){
+  set('bv-num','Pedido #'+d.num);
+  set('bv-ttl','Olá, '+d.nome.split(' ')[0]+'! Seu pedido foi confirmado.');
+  set('bv-prod',d.prod);
+  set('hdr-num','Pedido #'+d.num);
+  document.getElementById('c-nome').value=d.nome; markFilled(document.getElementById('c-nome'));
+  document.getElementById('c-tel').value=d.tel; markFilled(document.getElementById('c-tel'));
+  var hoje=new Date().toISOString().split('T')[0];
+  document.getElementById('e-data').min=hoje;
+  ir('sc-bv');
+}
+
+/* ─── FORMULÁRIO ─────────────────────────────── */
+function irForm(n){
+  if(curStep>=0){var old=document.getElementById('s'+curStep);if(old)old.classList.remove('on');}
+  ir('sc-form');
+  var nxt=document.getElementById('s'+n); if(nxt)nxt.classList.add('on');
+  curStep=n;
+  var pcts=[25,50,75,100];
+  document.getElementById('bar').style.width=(pcts[n]||100)+'%';
+  for(var i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('on',i===n);
+}
+
+function setTipo(t){
+  tipoEnd=t;
+  document.getElementById('tp-res').classList.toggle('on',t==='res');
+  document.getElementById('tp-com').classList.toggle('on',t==='com');
+  show('campos-entrega');
+  document.getElementById('campos-res').style.display=t==='res'?'block':'none';
+  document.getElementById('campos-com').style.display=t==='com'?'block':'none';
+}
+
+function isFds(d){var dow=new Date(d+'T12:00:00').getDay();return dow===0||dow===6;}
+function isHoje(d){var h=new Date(),dt=new Date(d+'T12:00:00');return dt.getDate()===h.getDate()&&dt.getMonth()===h.getMonth()&&dt.getFullYear()===h.getFullYear();}
+function getMinH(){var n=new Date();return n.getMinutes()>0?n.getHours()+2:n.getHours()+1;}
+
+function gerarHorarios(){
+  var sel=document.getElementById('e-hora');
+  var data=document.getElementById('e-data').value;
+  sel.innerHTML='<option value="">Selecione...</option>';sel.classList.remove('filled');
+  if(!data)return;
+  var fds=isFds(data),ini=9,fim=fds?14:17,minH=isHoje(data)?getMinH():ini,count=0;
+  for(var h=ini;h<fim;h++){
+    if(h===12)continue;if(h<minH)continue;
+    var op=document.createElement('option');
+    op.value=h+'h – '+(h+1)+'h';
+    op.textContent=h+'h – '+(h+1)+'h';
+    sel.appendChild(op);count++;
+  }
+  if(!count)sel.innerHTML='<option value="">Sem horários disponíveis hoje</option>';
+}
+
+/* ─── FINALIZAR ─────────────────────────────── */
+function finalizar(){
+  var c1=document.getElementById('chk1').checked;
+  var c2=document.getElementById('chk2').checked;
+  if(!c1||!c2){
+    var err=document.getElementById('err-chk');
+    err.style.display='block';err.classList.add('show');return;
+  }
+
+  var nome=document.getElementById('c-nome').value.trim();
+  var tel=document.getElementById('c-tel').value.trim();
+  var msg=document.getElementById('c-msg').value.trim();
+  var ass=document.getElementById('c-ass').value.trim();
+  var pnome=(document.getElementById('e-pnome').value.trim()+' '+document.getElementById('e-psobrenome').value.trim()).trim();
+  var ptel=document.getElementById('e-ptel').value.trim();
+  var data=document.getElementById('e-data').value;
+  var hora=document.getElementById('e-hora').value;
+  var obs=document.getElementById('e-obs').value.trim();
+  var endStr='';
+
+  if(tipoEnd==='res'){
+    var rua=document.getElementById('e-rua').value.trim();
+    var num=document.getElementById('e-num').value.trim();
+    var apto=document.getElementById('e-apto').value.trim();
+    var bloco=document.getElementById('e-bloco').value.trim();
+    var bairro=document.getElementById('e-bairro').value.trim();
+    endStr=rua+(num?', '+num:'')+(apto?', Apto '+apto:'')+(bloco?', '+bloco:'')+(bairro?', '+bairro:'');
+  }else{
+    var end=document.getElementById('e-end').value.trim();
+    var bairro2=document.getElementById('e-bairro2').value.trim();
+    var depto=document.getElementById('e-depto').value.trim();
+    var ramal=document.getElementById('e-ramal').value.trim();
+    endStr=end+(bairro2?', '+bairro2:'')+(depto?', Depto: '+depto:'')+(ramal?', Ramal: '+ramal:'');
+  }
+
+  dadosFinais={nome,tel,msg,ass,pnome,ptel,data,hora,obs,endStr,tipo:tipoEnd};
+
+  /* Comprovante do cliente */
+  set('comp-sub','Pedido #'+pedidoData.num+' — Agendamento registrado.');
+  set('cp-num','#'+pedidoData.num);
+  set('cp-prod',pedidoData.prod);
+  set('cp-nome',nome);
+  set('cp-tel',tel);
+  if(msg){
+    show('cp-cartao-card');
+    set('cp-msg',msg);
+    if(ass){set('cp-ass',ass);show('cp-ass-row','flex');}else hide('cp-ass-row');
+  }else hide('cp-cartao-card');
+  set('cp-tipo',tipoEnd==='res'?'Residencial':'Comercial');
+  set('cp-pnome',pnome||'—');
+  if(ptel){set('cp-ptel',ptel);show('cp-ptel-row','flex');}else hide('cp-ptel-row');
+  set('cp-end',endStr||'—');
+  if(obs){set('cp-obs',obs);show('cp-obs-row','flex');}else hide('cp-obs-row');
+  set('cp-data',fmtData(data)||'—');
+  set('cp-hora',hora||'—');
+
+  /* Impressão interna */
+  set('pr-num','#'+pedidoData.num);
+  set('pr-prod',pedidoData.prod);
+  var pagoEl=document.getElementById('pr-pago');
+  if(pedidoData.pago){pagoEl.textContent='PAGO';pagoEl.className='print-status pago';}
+  else{pagoEl.textContent='AGUARDANDO PAGAMENTO';pagoEl.className='print-status npago';}
+  set('pr-nome',nome);set('pr-tel',tel);
+  if(msg){
+    show('pr-cartao-sec');show('pr-cartao-rows');
+    set('pr-msg',msg);
+    if(ass){set('pr-ass',ass);show('pr-ass-row');}else hide('pr-ass-row');
+  }else{hide('pr-cartao-sec');hide('pr-cartao-rows');}
+  set('pr-tipo',tipoEnd==='res'?'Residencial':'Comercial');
+  set('pr-pnome',pnome||'—');
+  if(ptel){set('pr-ptel',ptel);show('pr-ptel-row');}else hide('pr-ptel-row');
+  set('pr-end',endStr||'—');
+  if(obs){set('pr-obs',obs);show('pr-obs-row');}else hide('pr-obs-row');
+  set('pr-data',fmtData(data)||'—');
+  set('pr-hora',hora||'—');
+  var agora=new Date();
+  set('pr-gerado',agora.toLocaleDateString('pt-BR')+' às '+agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+
+  ir('sc-comp');
+}
+
+/* ─── PDF CLIENTE ─────────────────────────────── */
+function salvarPDF(){
+  window.print();
+}
+
+/* ─── LER PARÂMETROS DA URL ─────────────────────────────── */
+function lerParams(){
+  var params=new URLSearchParams(window.location.search);
+  var num=params.get('num');
+  var prod=params.get('prod');
+  var nome=params.get('nome');
+  var tel=params.get('tel');
+  var pago=params.get('pago');
+  if(num&&prod&&nome&&tel){
+    pedidoData={num,prod,nome,tel,pago:pago==='sim'};
+    carregarCliente(pedidoData);
+  }
+}
+
+/* ─── IMPRESSÃO INTERNA ─────────────────────────────── */
+/* Botão de impressão interna — adicionar dinamicamente */
+window.addEventListener('DOMContentLoaded',function(){
+  lerParams();
+  var compBod=document.querySelector('.comp-bod');
+  var btnPrint=document.createElement('button');
+  btnPrint.className='btn-b';
+  btnPrint.style.marginTop='8px';
+  btnPrint.textContent='🖨️ Imprimir agendamento (uso interno)';
+  btnPrint.onclick=function(){
+    /* Troca temporariamente a área de print */
+    var styleEl=document.createElement('style');
+    styleEl.id='print-override';
+    styleEl.textContent='@media print{body>*{display:none!important}#print-area{display:block!important}}';
+    document.head.appendChild(styleEl);
+    window.print();
+    setTimeout(function(){
+      var s=document.getElementById('print-override');
+      if(s)s.remove();
+    },1000);
+  };
+  compBod.appendChild(btnPrint);
+});
+</script>
+</body>
+</html>
