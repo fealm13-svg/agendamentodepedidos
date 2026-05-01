@@ -686,28 +686,19 @@ function setPrazo(v){
     :'Cliente pode agendar a partir de amanhã (1 dia de prazo para preparo).';
 }
 
-function gerarLink(){
+async function gerarLink(){
+  var num=document.getElementById('f-num').value.trim();
   var prod=document.getElementById('f-prod').value.trim();
   var nome=document.getElementById('f-nome').value.trim();
   var tel=document.getElementById('f-tel').value.trim();
-  if(!prod||!nome||!tel){alert('Preencha produto, nome e WhatsApp do cliente.');return;}
+  if(!num||!prod||!nome||!tel){alert('Preencha todos os campos.');return;}
   if(pagoStatus===null){alert('Selecione o status de pagamento.');return;}
 
   var btnGerar=document.getElementById('btn-gerar');
   btnGerar.disabled=true;
   btnGerar.textContent='Salvando...';
 
-  // 1. Primeiro busca o próximo número disponível
-  var urlNum=APPS_SCRIPT_URL+'?action=proximoNum';
-  fetch(urlNum, {method:'GET', redirect:'follow'})
-  .then(function(r){return r.text();})
-  .then(function(txt){
-    var data=JSON.parse(txt);
-    if(!data.ok) throw new Error('Erro ao obter número: '+(data.erro||''));
-    var num=data.num; // número confirmado pelo servidor
-    console.log('[CRIAR] número confirmado pelo servidor:', num);
-
-    // 2. Cria o pedido com esse número
+  try{
     var url=APPS_SCRIPT_URL
       +'?action=criar'
       +'&num='+encodeURIComponent(num)
@@ -717,30 +708,36 @@ function gerarLink(){
       +'&tel='+encodeURIComponent(tel)
       +'&prazo='+encodeURIComponent(prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo');
 
-    return fetch(url, {method:'GET', redirect:'follow'})
-      .then(function(r){return r.text();})
-      .then(function(txt2){
-        console.log('[CRIAR] resposta criar:', txt2.substring(0,100));
-        var data2=JSON.parse(txt2);
-        if(!data2.ok) throw new Error('Erro ao criar: '+(data2.erro||''));
-        // 3. Gera link com o número confirmado
-        btnGerar.disabled=false;
-        btnGerar.textContent='Gerar link do pedido';
-        document.getElementById('f-num').value=num;
-        document.getElementById('f-num-display').textContent='#'+num;
-        var base=window.location.href.split('?')[0];
-        var link=base+'?pedido='+num;
-        document.getElementById('link-val').textContent=link;
-        show('link-box');
-      });
-  })
-  .catch(function(e){
-    console.error('[CRIAR] erro:', e.message);
+    var resp=await fetch(url,{method:'GET',redirect:'follow'});
+    var txt=await resp.text();
+    var data;
+    try{
+      data=JSON.parse(txt);
+    }catch(e){
+      var m=txt.trim().match(/^[^(]+\((.+)\)\s*;?\s*$/s);
+      if(m) data=JSON.parse(m[1]);
+      else throw new Error('Resposta inválida do servidor.');
+    }
+
+    if(!data || !data.ok){
+      throw new Error((data && data.erro) ? data.erro : 'Não foi possível criar o pedido.');
+    }
+
+    var pedidoFinal=String(data.pedido || data.num || num).replace(/\D/g,'').padStart(6,'0');
+    document.getElementById('f-num').value=pedidoFinal;
+    document.getElementById('f-num-display').textContent='#'+pedidoFinal;
+
+    var base=window.location.href.split('?')[0];
+    var link=base+'?pedido='+pedidoFinal;
+    document.getElementById('link-val').textContent=link;
+    show('link-box');
+  }catch(e){
+    alert('Não foi possível salvar o pedido. Verifique a URL do Apps Script e tente novamente.');
+    console.error('[CRIAR] erro:', e);
+  }finally{
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
-    alert('Erro ao gerar pedido: '+e.message+'
-Verifique a conexão e tente novamente.');
-  });
+  }
 }
 
 function copiarLink(){
@@ -1100,16 +1097,10 @@ function finalizar(){
     +'&data_entrega='+encodeURIComponent(payload.data_entrega)
     +'&faixa_horario='+encodeURIComponent(payload.faixa_horario);
 
-  fetch(url, {method:'GET', redirect:'follow'})
-  .then(function(r){ return r.text(); })
-  .then(function(txt){
-    console.log('[AGENDAR] resposta:', txt.substring(0,100));
-    btn.disabled=false; btn.textContent='Finalizar pedido';
-    montarComprovante(nome,tel,msg,ass,pnome,ptel,endStr,obs,dataStr,horaStr);
-  })
-  .catch(function(e){
-    console.error('[AGENDAR] erro:', e.name, e.message);
-    btn.disabled=false; btn.textContent='Finalizar pedido';
+  // no-cors: não lemos a resposta, apenas disparamos o salvamento
+  fetch(url, {mode:'no-cors'})
+  .finally(function(){
+    btn.disabled=false;btn.textContent='Finalizar pedido';
     montarComprovante(nome,tel,msg,ass,pnome,ptel,endStr,obs,dataStr,horaStr);
   });
 }
