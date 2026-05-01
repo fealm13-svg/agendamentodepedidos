@@ -709,10 +709,10 @@ function gerarLink(){
     +'&prazo='+encodeURIComponent(prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo');
 
   console.log('[CRIAR] URL chamada:', url);
-  // no-cors: não lemos a resposta, apenas disparamos o salvamento
-  fetch(url, {mode:'no-cors'})
-  .then(function(r){
-    console.log('[CRIAR] fetch ok, status:', r.status, 'type:', r.type);
+  fetch(url, {method:'GET', redirect:'follow'})
+  .then(function(r){ return r.text(); })
+  .then(function(txt){
+    console.log('[CRIAR] resposta:', txt.substring(0,100));
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
     var base=window.location.href.split('?')[0];
@@ -721,9 +721,10 @@ function gerarLink(){
     show('link-box');
   })
   .catch(function(e){
-    console.error('[CRIAR] fetch erro:', e.name, e.message);
+    console.error('[CRIAR] erro:', e.name, e.message);
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
+    // Mesmo com erro gera o link
     var base=window.location.href.split('?')[0];
     var link=base+'?pedido='+num;
     document.getElementById('link-val').textContent=link;
@@ -1088,10 +1089,16 @@ function finalizar(){
     +'&data_entrega='+encodeURIComponent(payload.data_entrega)
     +'&faixa_horario='+encodeURIComponent(payload.faixa_horario);
 
-  // no-cors: não lemos a resposta, apenas disparamos o salvamento
-  fetch(url, {mode:'no-cors'})
-  .finally(function(){
-    btn.disabled=false;btn.textContent='Finalizar pedido';
+  fetch(url, {method:'GET', redirect:'follow'})
+  .then(function(r){ return r.text(); })
+  .then(function(txt){
+    console.log('[AGENDAR] resposta:', txt.substring(0,100));
+    btn.disabled=false; btn.textContent='Finalizar pedido';
+    montarComprovante(nome,tel,msg,ass,pnome,ptel,endStr,obs,dataStr,horaStr);
+  })
+  .catch(function(e){
+    console.error('[AGENDAR] erro:', e.name, e.message);
+    btn.disabled=false; btn.textContent='Finalizar pedido';
     montarComprovante(nome,tel,msg,ass,pnome,ptel,endStr,obs,dataStr,horaStr);
   });
 }
