@@ -589,17 +589,26 @@ async function buscarCep(){
 
 // ── PRÓXIMO NÚMERO DO PEDIDO ──────────────────────
 function carregarProximoNum(){
+  console.log('[NUM] carregarProximoNum chamado, URL:', APPS_SCRIPT_URL);
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('SEU_ID') >= 0){
+    document.getElementById('f-num-display').textContent='URL não configurada';
+    return;
+  }
+  document.getElementById('f-num-display').textContent='Carregando...';
   jsonpRequest(
     APPS_SCRIPT_URL+'?action=proximoNum',
     function(data){
+      console.log('[NUM] resposta:', data);
       if(data.ok){
         document.getElementById('f-num').value=data.num;
         document.getElementById('f-num-display').textContent='#'+data.num;
       } else {
+        console.error('[NUM] erro:', data.erro);
         document.getElementById('f-num-display').textContent='Erro ao carregar';
       }
     },
     function(){
+      console.error('[NUM] timeout ou falha no JSONP');
       document.getElementById('f-num-display').textContent='Erro de conexão';
     }
   );
@@ -828,7 +837,8 @@ function lerParams(){
 
   // Sem parâmetros = tela do Felipe
   ir('sc-felipe');
-  carregarProximoNum();
+  // Pequeno delay para garantir que APPS_SCRIPT_URL está definido
+  setTimeout(carregarProximoNum, 300);
 }
 
 function buscarEImprimir(num){
