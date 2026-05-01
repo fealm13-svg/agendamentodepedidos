@@ -193,7 +193,7 @@ html,body{min-height:100%;font-family:'Inter',sans-serif;background:#f5f0eb;colo
   CONFIGURAÇÃO — cole a URL do seu Apps Script abaixo
   ══════════════════════════════════════════════════ -->
 <script>
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJWDyLb7ewHPnoS-RIl2yMxVIV0oUeYiLgu5rrCeS_AX2BWGszWBxHeaLT1eGUkJLJ6Q/exec';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/SEU_ID_AQUI/exec';
 </script>
 
 <div class="shell">
@@ -615,18 +615,17 @@ function gerarLink(){
   btnGerar.disabled=true;
   btnGerar.textContent='Salvando...';
 
-  // Salvar no Apps Script
-  fetch(APPS_SCRIPT_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      action:'criar',
-      num:num,produto:prod,
-      pago:pagoStatus?'Pago':'Aguardando pagamento',
-      nome:nome,tel:tel,
-      prazo:prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo'
-    })
-  })
+  // Usa GET para contornar CORS do Apps Script
+  var url=APPS_SCRIPT_URL
+    +'?action=criar'
+    +'&num='+encodeURIComponent(num)
+    +'&produto='+encodeURIComponent(prod)
+    +'&pago='+encodeURIComponent(pagoStatus?'Pago':'Aguardando pagamento')
+    +'&nome='+encodeURIComponent(nome)
+    +'&tel='+encodeURIComponent(tel)
+    +'&prazo='+encodeURIComponent(prazoEntrega==='pronta'?'Pronta entrega':'1 dia de prazo');
+
+  fetch(url)
   .then(function(r){return r.json();})
   .then(function(data){
     btnGerar.disabled=false;
@@ -640,13 +639,10 @@ function gerarLink(){
       alert('Erro ao salvar: '+(data.erro||'tente novamente'));
     }
   })
-  .catch(function(){
+  .catch(function(e){
     btnGerar.disabled=false;
     btnGerar.textContent='Gerar link do pedido';
-    // Gera link mesmo sem backend (modo offline)
-    var base=window.location.href.split('?')[0];
-    document.getElementById('link-val').textContent=base+'?pedido='+num;
-    show('link-box');
+    alert('Erro de conexão: '+e.message);
   });
 }
 
@@ -955,11 +951,23 @@ function finalizar(){
     faixa_horario:horaStr
   };
 
-  fetch(APPS_SCRIPT_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
-  })
+  // Usa GET para contornar CORS do Apps Script
+  var url=APPS_SCRIPT_URL
+    +'?action=agendar'
+    +'&num='+encodeURIComponent(payload.num)
+    +'&confirma_nome='+encodeURIComponent(payload.confirma_nome)
+    +'&confirma_tel='+encodeURIComponent(payload.confirma_tel)
+    +'&cartao_msg='+encodeURIComponent(payload.cartao_msg)
+    +'&cartao_ass='+encodeURIComponent(payload.cartao_ass)
+    +'&tipo_end='+encodeURIComponent(payload.tipo_end)
+    +'&presenteado_nome='+encodeURIComponent(payload.presenteado_nome)
+    +'&presenteado_tel='+encodeURIComponent(payload.presenteado_tel)
+    +'&endereco='+encodeURIComponent(payload.endereco)
+    +'&obs='+encodeURIComponent(payload.obs)
+    +'&data_entrega='+encodeURIComponent(payload.data_entrega)
+    +'&faixa_horario='+encodeURIComponent(payload.faixa_horario);
+
+  fetch(url)
   .then(function(r){return r.json();})
   .then(function(data){
     btn.disabled=false;btn.textContent='Finalizar pedido';
