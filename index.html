@@ -765,35 +765,30 @@ function carregarBV(){
   ir('sc-bv');
 }
 
-// JSONP — única forma de ler resposta do Apps Script sem CORS
+// GET direto — Apps Script permite CORS em requisições GET simples
 function jsonpRequest(url, onSuccess, onError){
-  var cbName = '__jsonpcb_'+Date.now();
-  var script = document.createElement('script');
-  console.log('[JSONP] iniciando, callback:', cbName);
-  console.log('[JSONP] URL:', url+'&callback='+cbName);
-  var timer = setTimeout(function(){
-    console.error('[JSONP] TIMEOUT após 8s');
-    cleanup();
-    if(onError) onError();
-  }, 8000);
-  function cleanup(){
-    clearTimeout(timer);
-    delete window[cbName];
-    if(script.parentNode) script.parentNode.removeChild(script);
-  }
-  window[cbName] = function(data){
-    console.log('[JSONP] resposta recebida:', data);
-    cleanup();
+  console.log('[GET] chamando:', url);
+  fetch(url, {
+    method: 'GET',
+    redirect: 'follow'
+  })
+  .then(function(r){
+    console.log('[GET] status:', r.status, 'type:', r.type);
+    return r.text();
+  })
+  .then(function(txt){
+    console.log('[GET] resposta texto:', txt.substring(0,200));
+    // Remove wrapper JSONP se presente (callback(...))
+    var json = txt.trim();
+    var m = json.match(/^[^(]+\((.+)\)\s*;?\s*$/s);
+    if(m) json = m[1];
+    var data = JSON.parse(json);
     onSuccess(data);
-  };
-  script.src = url + '&callback=' + cbName;
-  script.onerror = function(e){
-    console.error('[JSONP] script.onerror:', e);
-    cleanup();
+  })
+  .catch(function(e){
+    console.error('[GET] erro:', e.name, e.message);
     if(onError) onError();
-  };
-  document.head.appendChild(script);
-  console.log('[JSONP] script tag adicionado ao head');
+  });
 }
 
 function lerParams(){
